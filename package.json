@@ -1,0 +1,30 @@
+{
+  "name": "goease",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": { "node": ">=24.15.0 <25", "pnpm": "10.34.6" },
+  "scripts": {
+    "dev": "pnpm --filter @goease/contracts build && concurrently -k -n api,web \"pnpm --filter @goease/api dev\" \"pnpm --filter @goease/web dev\"",
+    "dev:api": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api dev",
+    "dev:web": "pnpm --filter @goease/contracts build && pnpm --filter @goease/web dev",
+    "typecheck": "pnpm --filter @goease/contracts build && pnpm -r typecheck && tsc -p tsconfig.smoke.json",
+    "lint": "eslint . --max-warnings 0",
+    "test:unit": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api test && pnpm --filter @goease/web test",
+    "test:smoke": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api build && playwright test",
+    "test": "pnpm test:unit && pnpm test:smoke",
+    "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "@types/node": "24.19.1",
+    "concurrently": "10.0.5",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1"
+  }
+}

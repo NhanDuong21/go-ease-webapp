@@ -1,0 +1,21 @@
+import { ArgumentsHost, Catch, HttpException, type ExceptionFilter } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import type { ApiErrorResponse } from '@goease/contracts';
+
+@Catch()
+export class ApiExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const http = host.switchToHttp();
+    const statusCode = exception instanceof HttpException ? exception.getStatus() : 500;
+    const code = statusCode === 404 ? 'NOT_FOUND' : statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_ERROR';
+    const message = statusCode === 404 ? 'Không tìm thấy đường dẫn API.' :
+      statusCode >= 500 ? 'API gặp lỗi. Vui lòng thử lại sau.' : 'Yêu cầu chưa hợp lệ.';
+    const request = http.getRequest<Request>();
+    const body: ApiErrorResponse = {
+      error: { code, message, statusCode },
+      path: request.originalUrl.split('?')[0] ?? request.path,
+      timestamp: new Date().toISOString(),
+    };
+    http.getResponse<Response>().status(statusCode).json(body);
+  }
+}
