@@ -13,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Web: http://127.0.0.1:5173 — API: http://127.0.0.1:3000/api/health. Ctrl+C dừng cả hai app. Lệnh có thể chạy trực tiếp trong PowerShell, không phụ thuộc cú pháp shell Linux.
+Web: http://127.0.0.1:5173 — API: http://127.0.0.1:3000/api/health. `pnpm dev` build contracts thành công trước khi chạy ứng dụng, rồi giữ một TypeScript watcher cho contracts cùng API/web. Thay đổi runtime được API nạp lại và Vite cập nhật trên web; bấm **Kiểm tra lại** để gửi health request mới. Lỗi compile contracts hiện trong terminal, giữ dist hợp lệ trước đó và tự build lại khi sửa lỗi. Ctrl+C dừng các watcher và cả hai app. Lệnh chạy trực tiếp trong PowerShell/Linux.
 
 Cấu hình local mặc định đủ để chạy, không cần tạo .env. Nếu muốn tùy chỉnh, copy riêng `apps/api/.env.example` và `apps/web/.env.example` thành `.env` ở cùng thư mục. Đổi cấu hình Vite cần khởi động lại dev/build.
 
@@ -26,14 +26,19 @@ Cấu hình local mặc định đủ để chạy, không cần tạo .env. N�
 
 Không cần OAuth/Gemini/Maps key cho health. Quy tắc secrets ở AGENTS.md.
 
-Để thử API tắt/bật riêng, chạy hai terminal từ root:
+Để thử API tắt/bật riêng, build contracts **một lần** từ root, rồi chạy API và web ở hai terminal:
 
 ```sh
+pnpm --filter @goease/contracts build
+# Terminal API
 pnpm dev:api
+# Terminal web
 pnpm dev:web
 ```
 
 Dừng terminal API, bấm **Kiểm tra lại** trên web: phải hiện lỗi. Chạy lại API, bấm **Thử lại**: phải nhận phản hồi thành công mới.
+
+`dev:api` và `dev:web` chỉ theo dõi ứng dụng tương ứng, **không build/watch contracts**. Khi sửa contracts trong chế độ chạy riêng, dùng thêm một terminal `pnpm dev:contracts` (watcher này tự build lần đầu; chờ “Found 0 errors” trước khi bật app), hoặc chạy lại lệnh build contracts thủ công. Chỉ chạy một watcher/build contracts tại một thời điểm; không chạy các lệnh này đồng thời với `pnpm dev`.
 
 ## Kiểm tra
 
@@ -47,9 +52,10 @@ pnpm test
 pnpm build
 ```
 
-- API: Node test runner khởi động Nest thật trên port ngẫu nhiên; health/404/CORS và cấu hình.
+- API: Node test runner khởi động Nest thật trên port ngẫu nhiên với cấu hình explicit đã validate; bỏ qua env file và runtime env, không đổi env cá nhân. Regression chạy lại toàn bộ suite HTTP trong subprocess với cwd tạm: không có env, env local khác mặc định, runtime khác và env không hợp lệ. Bootstrap mặc định vẫn đọc `.env`/runtime và từ chối cấu hình production thiếu origin.
 - UI: Vitest + Testing Library dùng fetch doubles để kiểm tra loading/success/error/retry, contract sai và hủy request.
 - Smoke: Playwright khởi động API thật port 3020 và web production port 4173; desktop/mobile Chromium, health network, retry, console và tràn ngang. Hai port này cần trống; test không tái sử dụng dịch vụ lạ đang chạy. Có thể chạy riêng `pnpm test:unit` hoặc `pnpm test:smoke`.
+- Dev: `pnpm test:dev` chạy `pnpm dev` trong fixture không có dist, tái sử dụng dependency đã install nhưng liên kết contracts riêng của fixture. Chromium xác minh runtime API và guard web, compile error không emit và phục hồi. Port 3031/5181 phải trống. Linux dùng SIGINT và xác minh tiến trình con/cổng đã dừng; Windows test tự dọn process tree, Ctrl+C còn được thử trực tiếp bằng PowerShell. Probe chỉ sửa fixture và được khôi phục byte-exact.
 - CI: PR vào main và push main đều chạy check **Quality Gate**, không cần secret/DB/dịch vụ AI. Job tuần tự chỉ thành công khi typecheck, lint, test và build đều đạt.
 
 Sau build, có thể chạy API bằng `pnpm --filter @goease/api start` và web bằng `pnpm --filter @goease/web preview`. Preview mặc định port 4173; nếu dùng web preview cùng API mặc định, thêm `http://127.0.0.1:4173` vào WEB_ORIGINS rồi khởi động lại API. Đây là local preview, chưa phải staging.

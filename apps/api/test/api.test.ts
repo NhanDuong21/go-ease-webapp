@@ -1,16 +1,29 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isHealthResponse } from '@goease/contracts';
+import { ConfigService } from '@nestjs/config';
 import { createApp } from '../src/app.js';
+import type { Environment } from '../src/config.js';
 
 let app: Awaited<ReturnType<typeof createApp>>;
 let baseUrl: string;
 before(async () => {
-  app = await createApp(false);
+  const previousEnv = { NODE_ENV: process.env.NODE_ENV, PORT: process.env.PORT, WEB_ORIGINS: process.env.WEB_ORIGINS };
+  app = await createApp({ logging: false, environment: {
+    NODE_ENV: 'test', PORT: '3000', WEB_ORIGINS: 'http://localhost:5173',
+  } });
+  assert.deepEqual({ NODE_ENV: process.env.NODE_ENV, PORT: process.env.PORT, WEB_ORIGINS: process.env.WEB_ORIGINS }, previousEnv);
   await app.listen(0, '127.0.0.1');
   baseUrl = await app.getUrl();
 });
 after(async () => { await app?.close(); });
+
+test('app dùng cấu hình test rõ ràng, bỏ qua file và runtime env', () => {
+  const config = app.get(ConfigService<Environment, true>);
+  assert.equal(config.get('NODE_ENV', { infer: true }), 'test');
+  assert.equal(config.get('PORT', { infer: true }), 3000);
+  assert.deepEqual(config.get('WEB_ORIGINS', { infer: true }), ['http://localhost:5173']);
+});
 
 test('GET /api/health trả contract API-only và thời điểm hiện tại', async () => {
   const response = await fetch(`${baseUrl}/api/health`);

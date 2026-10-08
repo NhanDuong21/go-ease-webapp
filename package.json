@@ -6,14 +6,16 @@
   "packageManager": "pnpm@10.34.6",
   "engines": { "node": ">=24.15.0 <25", "pnpm": "10.34.6" },
   "scripts": {
-    "dev": "pnpm --filter @goease/contracts build && concurrently -k -n api,web \"pnpm --filter @goease/api dev\" \"pnpm --filter @goease/web dev\"",
-    "dev:api": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api dev",
-    "dev:web": "pnpm --filter @goease/contracts build && pnpm --filter @goease/web dev",
+    "dev": "pnpm --filter @goease/contracts build && concurrently --raw -k -n contracts,api,web \"pnpm --filter @goease/contracts dev\" \"pnpm --filter @goease/api dev\" \"pnpm --filter @goease/web dev\"",
+    "dev:contracts": "pnpm --filter @goease/contracts dev",
+    "dev:api": "pnpm --filter @goease/api dev",
+    "dev:web": "pnpm --filter @goease/web dev",
     "typecheck": "pnpm --filter @goease/contracts build && pnpm -r typecheck && tsc -p tsconfig.smoke.json",
     "lint": "eslint . --max-warnings 0",
     "test:unit": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api test && pnpm --filter @goease/web test",
     "test:smoke": "pnpm --filter @goease/contracts build && pnpm --filter @goease/api build && playwright test",
-    "test": "pnpm test:unit && pnpm test:smoke",
+    "test:dev": "node --test tests/dev/*.test.ts",
+    "test": "pnpm test:unit && pnpm test:smoke && pnpm test:dev",
     "build": "pnpm -r build"
   },
   "devDependencies": {
